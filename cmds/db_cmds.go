@@ -65,8 +65,8 @@ func getDbClient() *mongo.Client {
 
 	var err error
 	if client == nil {
-		username := os.Getenv("USERNAME")
-		password := os.Getenv("PASSWORD")
+		username := os.Getenv("DB_USERNAME")
+		password := os.Getenv("DB_PASSWORD")
 		dbname := os.Getenv("DB_NAME")
 		uri := fmt.Sprintf("mongodb+srv://%s:%s@datastore.nzvab.mongodb.net/%s?retryWrites=true&w=majority", username, password, dbname)
 
