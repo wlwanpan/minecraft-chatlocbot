@@ -17,15 +17,18 @@ var (
 	client *mongo.Client
 )
 
-func saveLocation(playerName string, locationName string, pos []float64) bool {
-
-	loc := dbschemas.SavedLocation{playerName, locationName, pos[0], pos[1], pos[2]}
+func saveLocation(playerName string, locName string, pos []float64) dbschemas.SavedLocation {
 
 	collection := getSavedLocationsDatabaseCollection()
+	ctx := context.TODO()
 
-	result, err := collection.InsertOne(context.TODO(), loc)
+	loc := dbschemas.SavedLocation{playerName, locName, pos[0], pos[1], pos[2]}
 
-	return err == nil && result != nil
+	opts := options.FindOneAndUpdate()
+	opts.SetUpsert(true)
+	collection.FindOneAndUpdate(ctx, bson.M{"playername": playerName, "locationname": locName}, bson.M{"$set": loc}, opts)
+
+	return loc
 }
 
 func getAllLocations(playerName string) ([]dbschemas.SavedLocation, error) {
@@ -33,11 +36,22 @@ func getAllLocations(playerName string) ([]dbschemas.SavedLocation, error) {
 	collection := getSavedLocationsDatabaseCollection()
 	ctx := context.TODO()
 
-	var locations []dbschemas.SavedLocation
+	var locs []dbschemas.SavedLocation
 	resultCursor, err := collection.Find(ctx, bson.M{"playername": playerName})
-	resultCursor.All(ctx, &locations)
+	resultCursor.All(ctx, &locs)
 
-	return locations, err
+	return locs, err
+}
+
+func getLocation(playerName string, locName string) (dbschemas.SavedLocation, error) {
+
+	collection := getSavedLocationsDatabaseCollection()
+	ctx := context.TODO()
+
+	var loc dbschemas.SavedLocation
+	err := collection.FindOne(ctx, bson.M{"playername": playerName, "locationname": locName}).Decode(&loc)
+
+	return loc, err
 }
 
 func getSavedLocationsDatabaseCollection() *mongo.Collection {

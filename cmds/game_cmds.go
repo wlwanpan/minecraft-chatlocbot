@@ -13,6 +13,7 @@ import (
 
 // RunServer run the game server
 func RunServer() *wrapper.Wrapper {
+
 	wpr := wrapper.NewDefaultWrapper("server.jar", 1024, 1024)
 
 	log.Println("Server loading ...")
@@ -31,6 +32,7 @@ func RunServer() *wrapper.Wrapper {
 
 // HandleGameEvents handles game events
 func HandleGameEvents(w *wrapper.Wrapper) {
+
 	// Listening to game events...
 	for {
 		gameEvent := <-w.GameEvents()
@@ -49,8 +51,7 @@ func handlePlayerSay(gameEvent events.GameEvent, w *wrapper.Wrapper) string {
 
 	switch {
 	case strings.Contains(playerMsg, playersayevents.SaveLocation):
-		locationMsg := strings.ReplaceAll(playerMsg, playersayevents.SaveLocation, "")
-		locationName := strings.TrimSpace(locationMsg)
+		locName := getLocNameFromMsg(playerMsg, playersayevents.SaveLocation)
 
 		out, err := w.DataGet("entity", playerName)
 		if err != nil {
@@ -59,32 +60,40 @@ func handlePlayerSay(gameEvent events.GameEvent, w *wrapper.Wrapper) string {
 		}
 
 		pos := out.Pos
-		result := saveLocation(playerName, locationName, pos)
+		loc := saveLocation(playerName, locName, pos)
 
-		if result {
-			return fmt.Sprintf("Saved location %s with position X Pos %f, Y Pos %f, Z Pos %f /n",
-				locationName, pos[0], pos[1], pos[2])
-		}
-
-		return "Failed to save location, please try again"
+		return fmt.Sprintf("Saved location %s with position X Pos %f, Y Pos %f, Z Pos %f",
+			loc.LocationName, loc.XPos, loc.YPos, loc.ZPos)
 
 	case strings.Contains(playerMsg, playersayevents.GetAllLocations):
-		locations, err := getAllLocations(playerName)
+		locs, err := getAllLocations(playerName)
 
 		if err != nil {
 			handleError(w, err)
 			return ""
 		}
 
-		var allLocMsg strings.Builder
-		for i, loc := range locations {
+		var locsMsg strings.Builder
+		for i, loc := range locs {
 			msg := fmt.Sprintf("%d: %s, x %f y %f z %f | ", i, loc.LocationName, loc.XPos, loc.YPos, loc.ZPos)
-			allLocMsg.WriteString(msg)
+			locsMsg.WriteString(msg)
 		}
 
-		return allLocMsg.String()
-	}
+		return locsMsg.String()
 
+	case strings.Contains(playerMsg, playersayevents.GetLocation):
+		locName := getLocNameFromMsg(playerMsg, playersayevents.GetLocation)
+
+		loc, err := getLocation(playerName, locName)
+		if err != nil {
+			handleError(w, err)
+			return ""
+		}
+
+		msg := fmt.Sprintf("%s, x %f y %f z %f", loc.LocationName, loc.XPos, loc.YPos, loc.ZPos)
+
+		return msg
+	}
 	return ""
 }
 
@@ -93,4 +102,9 @@ func handleError(w *wrapper.Wrapper, err error) {
 		log.Println(err)
 		w.Say("An error has occured, view console")
 	}
+}
+
+func getLocNameFromMsg(msg string, eventmsg string) string {
+	locName := strings.TrimLeft(msg, eventmsg)
+	return strings.TrimSpace(locName)
 }

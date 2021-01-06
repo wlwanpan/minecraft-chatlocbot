@@ -8,13 +8,14 @@ import (
 )
 
 func main() {
-	wpr := cmds.RunServer()
-
-	defer wpr.Stop()
 
 	if err := godotenv.Load(); err != nil {
 		log.Print("No .env file found")
 	}
+
+	wpr := cmds.RunServer()
+
+	defer wpr.Stop()
 
 	cmds.HandleGameEvents(wpr)
 }
