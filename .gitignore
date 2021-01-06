@@ -19,5 +19,8 @@ eula.txt
 server.jar
 server.properties
 logs
+world
+banned*
+*.json
 
 .env
