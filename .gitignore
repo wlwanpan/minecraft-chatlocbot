@@ -19,3 +19,5 @@ eula.txt
 server.jar
 server.properties
 logs
+
+.env
