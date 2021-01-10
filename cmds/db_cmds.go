@@ -74,7 +74,8 @@ func getDbClient() *mongo.Client {
 		client, err = mongo.Connect(ctx, options.Client().ApplyURI(uri))
 
 		if err != nil {
-			log.Println(err)
+			log.Println("Failed to connect to database ...")
+			log.Fatal(err)
 		}
 	}
 

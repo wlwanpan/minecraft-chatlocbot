@@ -20,10 +20,7 @@ var runningPlayerCmds map[string]context.CancelFunc
 // RunServer run the game server
 func RunServer() *wrapper.Wrapper {
 
-	client := getDbClient()
-	if client == nil {
-		log.Fatal("Failed to connect to database")
-	}
+	getDbClient()
 
 	wpr := wrapper.NewDefaultWrapper("server.jar", 1024, 1024)
 
