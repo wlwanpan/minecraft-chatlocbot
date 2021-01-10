@@ -54,6 +54,7 @@ func getLocation(playerName string, locName string) (dbschemas.SavedLocation, er
 	return loc, err
 }
 
+// Helpers
 func getSavedLocationsDatabaseCollection() *mongo.Collection {
 	dbClient := getDbClient()
 	return dbClient.Database("minecraft").Collection("saved-locations")
