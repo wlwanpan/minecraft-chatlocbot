@@ -1,13 +1,11 @@
 package constants
 
 const (
-	SaveLocation       string = "loc save"
-	GetAllLocations    string = "loc list"
-	GetLocation        string = "loc"
-	GetCurrentLocation string = "current loc"
-	DeleteLocation     string = "delete loc"
-	DeleteAllLocations string = "delete all loc"
+	SaveLocation    string = "loc save"
+	GetAllLocations string = "loc list"
+	GetLocation     string = "loc get"
+	DeleteLocation  string = "loc delete"
 
-	StartDirectionToDest string = "dest start"
-	StopDirectionToDest  string = "dest stop"
+	StartDirectionToDest string = "loc goto"
+	StopDirectionToDest  string = "loc stop"
 )

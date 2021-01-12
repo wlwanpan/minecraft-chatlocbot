@@ -25,7 +25,6 @@ func RunServer() *wrapper.Wrapper {
 	wpr := wrapper.NewDefaultWrapper("server.jar", 1024, 1024)
 
 	log.Println("Server loading ...")
-
 	runningPlayerCmds = map[string]context.CancelFunc{}
 
 	err := wpr.Start()
@@ -53,7 +52,7 @@ func HandleGameEvents(w *wrapper.Wrapper) {
 		}
 
 		if gameEvent.String() == events.PlayerLeft {
-			stopDestTicker(w, gameEvent.Data["player_name"])
+			handleStopGOTO(w, gameEvent.Data["player_name"])
 		}
 	}
 }
@@ -62,80 +61,115 @@ func handlePlayerSay(gameEvent events.GameEvent, w *wrapper.Wrapper) {
 	playerName := gameEvent.Data["player_name"]
 	playerMsg := gameEvent.Data["player_message"]
 
-	out, _ := w.DataGet("entity", playerName)
-	w.Say(fmt.Sprintf("%v", out.Motion))
-	w.Say(fmt.Sprintf("%v", out.Rotation))
-	log.Println(out.Dimension)
-	log.Println(out.Rotation)
-
 	switch {
 	case strings.Contains(playerMsg, constants.SaveLocation):
-		locName := getLocNameFromMsg(playerMsg, constants.SaveLocation)
-
-		out, err := w.DataGet("entity", playerName)
-		if err != nil {
-			handleError(w, playerName, err)
-			return
-		}
-
-		pos := out.Pos
-		loc := saveLocation(playerName, locName, pos)
-
-		msg := fmt.Sprintf("Saved location %s with position X Pos %f, Y Pos %f, Z Pos %f",
-			loc.LocationName, loc.XPos, loc.YPos, loc.ZPos)
-		w.Say(msg)
+		handleSaveLocation(w, playerMsg, playerName)
 
 	case strings.Contains(playerMsg, constants.GetAllLocations):
-		locs, err := getAllLocations(playerName)
-
-		if err != nil {
-			handleError(w, playerName, err)
-			return
-		}
-
-		for i, loc := range locs {
-			msg := fmt.Sprintf("%d: %s, x %f y %f z %f | ", i, loc.LocationName, loc.XPos, loc.YPos, loc.ZPos)
-			w.Say(msg)
-		}
+		handleGetAllLoc(w, playerName)
 
 	case strings.Contains(playerMsg, constants.GetLocation):
-		locName := getLocNameFromMsg(playerMsg, constants.GetLocation)
-
-		loc, err := getLocation(playerName, locName)
-		if err != nil {
-			handleError(w, playerName, err)
-			return
-		}
-
-		msg := fmt.Sprintf("%s, x %f y %f z %f", loc.LocationName, loc.XPos, loc.YPos, loc.ZPos)
-		w.Say(msg)
+		handleGetLoc(w, playerMsg, playerName)
 
 	case strings.Contains(playerMsg, constants.StartDirectionToDest):
-		destName := getLocNameFromMsg(playerMsg, constants.StartDirectionToDest)
-		dest, err := getLocation(playerName, destName)
-
-		if err != nil {
-			handleError(w, playerName, err)
-			return
-		}
-
-		runDestTicker(w, playerName, dest)
+		handleGOTOLoc(w, playerMsg, playerName)
 
 	case strings.Contains(playerMsg, constants.StopDirectionToDest):
-		stopDestTicker(w, playerName)
+		handleStopGOTO(w, playerName)
 
-		w.Tell(playerName, "Stopped direction to destination")
+	case strings.Contains(playerMsg, constants.DeleteLocation):
+		handleDeleteLoc(w, playerMsg, playerName)
 	}
+
 	return
 }
 
-func stopDestTicker(w *wrapper.Wrapper, playerName string) {
-	if cancelCmd, hasCmd := runningPlayerCmds[playerName]; hasCmd {
-		cancelCmd()
+func handleSaveLocation(w *wrapper.Wrapper, playerMsg string, playerName string) {
+	locName := getLocNameFromMsg(playerMsg, constants.SaveLocation)
+
+	out, err := w.DataGet("entity", playerName)
+	if err != nil {
+		handleError(w, playerName, err)
+		return
+	}
+
+	pos := out.Pos
+	loc, err := saveLocation(playerName, locName, pos)
+
+	if err != nil {
+		handleError(w, playerName, err)
+		return
+	}
+
+	msg := fmt.Sprintf("Saved location %s with position X Pos %f, Y Pos %f, Z Pos %f",
+		loc.LocationName, loc.XPos, loc.YPos, loc.ZPos)
+
+	w.Say(msg)
+}
+
+func handleGetAllLoc(w *wrapper.Wrapper, playerName string) {
+	locs, err := getAllLocations(playerName)
+
+	if err != nil {
+		handleError(w, playerName, err)
+		return
+	}
+
+	for _, loc := range locs {
+		msg := fmt.Sprintf("%s : x %0.1f y %0.1f z %0.1f", loc.LocationName, loc.XPos, loc.YPos, loc.ZPos)
+		w.Say(msg)
 	}
 }
 
-func runDestTicker(w *wrapper.Wrapper, playerName string, dest dbschemas.SavedLocation) {
+func handleGetLoc(w *wrapper.Wrapper, playerMsg string, playerName string) {
+	locName := getLocNameFromMsg(playerMsg, constants.GetLocation)
+
+	loc, err := getLocation(playerName, locName)
+	if err != nil {
+		handleError(w, playerName, err)
+		return
+	}
+
+	msg := fmt.Sprintf("%s, x %0.1f y %0.1f z %0.1f", loc.LocationName, loc.XPos, loc.YPos, loc.ZPos)
+	w.Say(msg)
+}
+
+func handleStopGOTO(w *wrapper.Wrapper, playerName string) {
+	if cancelCmd, hasCmd := runningPlayerCmds[playerName]; hasCmd {
+		cancelCmd()
+		w.Tell(playerName, "Stopped direction to destination")
+	}
+}
+
+func handleDeleteLoc(w *wrapper.Wrapper, playerMsg string, playerName string) {
+	locName := getLocNameFromMsg(playerMsg, constants.DeleteLocation)
+
+	deleteCount, err := deleteLocation(playerName, locName)
+
+	if err != nil {
+		handleError(w, playerName, err)
+		return
+	}
+
+	if deleteCount == 0 {
+		w.Tell(playerName, "Location not deleted, location could not be found for deletion")
+		return
+	}
+
+	msg := fmt.Sprintf("Location successfully deleted")
+
+	w.Say(msg)
+}
+
+func handleGOTOLoc(w *wrapper.Wrapper, playerMsg string, playerName string) {
+	destName := getLocNameFromMsg(playerMsg, constants.StartDirectionToDest)
+	dest, err := getLocation(playerName, destName)
+
+	if err != nil {
+		handleError(w, playerName, err)
+		return
+	}
+
 	if _, hasCmd := runningPlayerCmds[playerName]; hasCmd {
 		w.Tell(playerName, fmt.Sprintf("direction for a destination is already running"))
 		return
@@ -156,13 +190,13 @@ func runDestTicker(w *wrapper.Wrapper, playerName string, dest dbschemas.SavedLo
 					return
 				}
 
-				pos := out.Pos
-				dir := getHorPlayerDirection(out.Rotation[0])
-				destPos := []float64{dest.XPos, dest.YPos, dest.ZPos}
-				directionToGo := getDirectionToGo(dir, pos, destPos)
+				//pos := out.Pos
+				playerDir := getHorPlayerDirection(out.Rotation[0])
+				//destPos := []float64{dest.XPos, dest.YPos, dest.ZPos}
+				//directionToGo := getDirectionToGo(playerDir, pos, destPos)
 
-				// w.Tell(playerName, dir)
-				w.Tell(playerName, fmt.Sprintf("%v", directionToGo))
+				w.Tell(playerName, playerDir)
+				//w.Tell(playerName, fmt.Sprintf("%v", directionToGo))
 				// w.Tell(playerName, fmt.Sprintf("%f %f %f", dest.XPos, dest.YPos, dest.ZPos))
 
 			case <-ctx.Done():
@@ -180,42 +214,37 @@ func handleError(w *wrapper.Wrapper, playerName string, err error) {
 }
 
 func getLocNameFromMsg(msg string, eventmsg string) string {
-	locName := strings.TrimLeft(msg, eventmsg)
+	locName := strings.TrimPrefix(msg, eventmsg)
+	log.Println(locName)
 	return strings.TrimSpace(locName)
 }
 
 func getDirectionToGo(playerDir string, playerPos []float64, destPos []float64) string {
 
-	directionMsg := ""
+	direction := ""
 
-	switch playerDir {
-	case "North":
-		if playerPos[2] < destPos[2] {
-			directionMsg += "back"
-		} else {
-			directionMsg += "forward"
-		}
-	case "South":
-		if playerPos[2] < destPos[2] {
-			directionMsg += "forward"
-		} else {
-			directionMsg += "back"
-		}
-	case "East":
-		if playerPos[2] < destPos[2] {
-			directionMsg += "right"
-		} else {
-			directionMsg += "left"
-		}
-	case "West":
-		if playerPos[2] < destPos[2] {
-			directionMsg += "left"
-		} else {
-			directionMsg += "right"
-		}
+	if playerPos[2] < destPos[2] {
+		direction += constants.South
+	} else {
+		direction += constants.North
 	}
 
-	return directionMsg
+	if playerPos[0] < destPos[0] {
+		direction += constants.East
+	} else {
+		direction += constants.West
+	}
+
+	// directionMsg := ""
+
+	// switch playerDir {
+	// case "North":
+	// case "South":
+	// case "East":
+	// case "West":
+	// }
+
+	return direction
 }
 
 func getHorPlayerDirection(horRotation float64) string {
@@ -228,19 +257,52 @@ func getHorPlayerDirection(horRotation float64) string {
 	degree := math.Abs(horRotation)
 
 	switch {
-	case degree >= 135 && degree <= 225:
+	// North West
+	case degree >= 120 && degree <= 150:
+		if isNegative {
+			return constants.NorthEast
+		}
+		return constants.NorthWest
+
+	// North
+	case degree >= 150 && degree <= 210:
 		return constants.North
-	case degree >= 225 && degree <= 315:
+
+	// North East
+	case degree >= 210 && degree <= 240:
 		if isNegative {
-			return "West"
+			return constants.NorthWest
 		}
-		return "East"
-	case degree >= 45 && degree <= 135:
+		return constants.NorthEast
+	// East
+	case degree >= 420 && degree <= 270:
 		if isNegative {
-			return "East"
+			return constants.West
 		}
-		return "West"
+		return constants.East
+
+	// South East
+	case degree >= 300 && degree <= 330:
+		if isNegative {
+			return constants.SouthWest
+		}
+		return constants.SouthEast
+
+	// South West
+	case degree >= 60 && degree <= 30:
+		if isNegative {
+			return constants.SouthEast
+		}
+		return constants.SouthWest
+
+	// West
+	case degree >= 60 && degree <= 120:
+		if isNegative {
+			return constants.East
+		}
+		return constants.West
+
 	default:
-		return "South"
+		return constants.South
 	}
 }
