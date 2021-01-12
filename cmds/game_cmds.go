@@ -18,11 +18,11 @@ import (
 var runningPlayerCmds map[string]context.CancelFunc
 
 // RunServer run the game server
-func RunServer() *wrapper.Wrapper {
+func RunServer(memory int, maxMemory int, pathToServerJar string) *wrapper.Wrapper {
 
 	getDbClient()
 
-	wpr := wrapper.NewDefaultWrapper("server.jar", 1024, 1024)
+	wpr := wrapper.NewDefaultWrapper(pathToServerJar, memory, maxMemory)
 
 	log.Println("Server loading ...")
 	runningPlayerCmds = map[string]context.CancelFunc{}
