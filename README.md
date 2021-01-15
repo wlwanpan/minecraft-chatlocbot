@@ -1,4 +1,9 @@
-# minecraft-save-script
+# minecraft-chatlocbot
+
+A simple chatbot that reads commands from the minecraft chat.
+For example, you can name and save a location's coordinates in the game by typing in `loc save <the_location_name>` in the chat.
+
+When you want to get the coordinates of that location, you can type in `loc get <the_location_name>`
 
 ### To run the script:
 
@@ -8,7 +13,7 @@
 
 `make run mem=MEM maxmem=MAXMEM path=PATH`
 
-Game commands:
+Chat commands:
 - loc save <location> : Saves the coordinates of a location
 - loc list : Lists all the saved locations
 - loc get <location> : Gets the coordinates of the specified location
