@@ -21,7 +21,11 @@ Chat commands:
 ### Sample instructions
 You can name and save a location's coordinates in the game by typing in `loc save <the_location_name>` in the chat.
 
+![alt text](https://github.com/Ana-Wan/minecraft-chatlocbot/blob/main/assets/loc_save.png?raw=true)
+
 When you want to get the coordinates of that location, you can type in `loc get <the_location_name>`
+
+![alt text](https://github.com/Ana-Wan/minecraft-chatlocbot/blob/main/assets/loc_get.png?raw=true)
 
 If you want directions to a location, type in `loc goto <the_location_name>` and it will print the direction you need to face every two seconds in the chat.
 
