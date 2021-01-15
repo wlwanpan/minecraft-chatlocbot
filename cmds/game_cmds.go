@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math"
 	"strings"
 	"time"
 
@@ -19,12 +18,11 @@ var runningPlayerCmds map[string]context.CancelFunc
 
 // RunServer run the game server
 func RunServer(memory int, maxMemory int, pathToServerJar string) *wrapper.Wrapper {
-
 	getDbClient()
 
 	wpr := wrapper.NewDefaultWrapper(pathToServerJar, memory, maxMemory)
 
-	log.Println("Server loading ...")
+	log.Println("Loading server ...")
 	runningPlayerCmds = map[string]context.CancelFunc{}
 
 	err := wpr.Start()
@@ -40,7 +38,7 @@ func RunServer(memory int, maxMemory int, pathToServerJar string) *wrapper.Wrapp
 }
 
 // HandleGameEvents handles game events
-func HandleGameEvents(w *wrapper.Wrapper) {
+func HandleGameEvents(w *wrapper.Wrapper, worldID [16]byte) {
 
 	// Listening to game events...
 	for {
@@ -48,7 +46,7 @@ func HandleGameEvents(w *wrapper.Wrapper) {
 		log.Println(gameEvent.String())
 
 		if gameEvent.String() == events.PlayerSay {
-			handlePlayerSay(gameEvent, w)
+			handlePlayerSay(w, gameEvent, worldID)
 		}
 
 		if gameEvent.String() == events.PlayerLeft {
@@ -57,34 +55,34 @@ func HandleGameEvents(w *wrapper.Wrapper) {
 	}
 }
 
-func handlePlayerSay(gameEvent events.GameEvent, w *wrapper.Wrapper) {
+func handlePlayerSay(w *wrapper.Wrapper, gameEvent events.GameEvent, worldID [16]byte) {
 	playerName := gameEvent.Data["player_name"]
 	playerMsg := gameEvent.Data["player_message"]
 
 	switch {
 	case strings.Contains(playerMsg, constants.SaveLocation):
-		handleSaveLocation(w, playerMsg, playerName)
+		handleSaveLocation(w, worldID, playerMsg, playerName)
 
 	case strings.Contains(playerMsg, constants.GetAllLocations):
-		handleGetAllLoc(w, playerName)
+		handleGetAllLoc(w, worldID, playerName)
 
 	case strings.Contains(playerMsg, constants.GetLocation):
-		handleGetLoc(w, playerMsg, playerName)
+		handleGetLoc(w, worldID, playerMsg, playerName)
 
 	case strings.Contains(playerMsg, constants.StartDirectionToDest):
-		handleGOTOLoc(w, playerMsg, playerName)
+		handleGOTOLoc(w, worldID, playerMsg, playerName)
 
 	case strings.Contains(playerMsg, constants.StopDirectionToDest):
 		handleStopGOTO(w, playerName)
 
 	case strings.Contains(playerMsg, constants.DeleteLocation):
-		handleDeleteLoc(w, playerMsg, playerName)
+		handleDeleteLoc(w, worldID, playerMsg, playerName)
 	}
 
 	return
 }
 
-func handleSaveLocation(w *wrapper.Wrapper, playerMsg string, playerName string) {
+func handleSaveLocation(w *wrapper.Wrapper, worldID [16]byte, playerMsg string, playerName string) {
 	locName := getLocNameFromMsg(playerMsg, constants.SaveLocation)
 
 	out, err := w.DataGet("entity", playerName)
@@ -94,50 +92,55 @@ func handleSaveLocation(w *wrapper.Wrapper, playerMsg string, playerName string)
 	}
 
 	pos := out.Pos
-	loc, err := saveLocation(playerName, locName, pos)
+	loc, err := saveLocation(worldID, playerName, locName, pos)
 
 	if err != nil {
 		handleError(w, playerName, err)
 		return
 	}
 
-	msg := fmt.Sprintf("Saved location %s with position X Pos %f, Y Pos %f, Z Pos %f",
-		loc.LocationName, loc.XPos, loc.YPos, loc.ZPos)
+	msg := fmt.Sprintf("%s saved location %s with position X %0.1f Y %0.1f Z %0.1f",
+		playerName, loc.LocationName, loc.XPos, loc.YPos, loc.ZPos)
 
 	w.Say(msg)
 }
 
-func handleGetAllLoc(w *wrapper.Wrapper, playerName string) {
-	locs, err := getAllLocations(playerName)
+func handleGetAllLoc(w *wrapper.Wrapper, worldID [16]byte, playerName string) {
+	locs, err := getAllLocations(worldID)
 
 	if err != nil {
 		handleError(w, playerName, err)
 		return
 	}
 
+	if len(locs) == 0 {
+		w.Tell(playerName, "No location saved")
+		return
+	}
+
 	for _, loc := range locs {
-		msg := fmt.Sprintf("%s : x %0.1f y %0.1f z %0.1f", loc.LocationName, loc.XPos, loc.YPos, loc.ZPos)
-		w.Say(msg)
+		msg := fmt.Sprintf("%s : X %0.1f Y %0.1f Z %0.1f", loc.LocationName, loc.XPos, loc.YPos, loc.ZPos)
+		w.Tell(playerName, msg)
 	}
 }
 
-func handleGetLoc(w *wrapper.Wrapper, playerMsg string, playerName string) {
+func handleGetLoc(w *wrapper.Wrapper, worldID [16]byte, playerMsg string, playerName string) {
 	locName := getLocNameFromMsg(playerMsg, constants.GetLocation)
 
-	loc, err := getLocation(playerName, locName)
+	loc, err := getLocation(worldID, locName)
 	if err != nil {
 		handleError(w, playerName, err)
 		return
 	}
 
 	msg := fmt.Sprintf("%s, x %0.1f y %0.1f z %0.1f", loc.LocationName, loc.XPos, loc.YPos, loc.ZPos)
-	w.Say(msg)
+	w.Tell(playerName, msg)
 }
 
-func handleDeleteLoc(w *wrapper.Wrapper, playerMsg string, playerName string) {
+func handleDeleteLoc(w *wrapper.Wrapper, worldID [16]byte, playerMsg string, playerName string) {
 	locName := getLocNameFromMsg(playerMsg, constants.DeleteLocation)
 
-	deleteCount, err := deleteLocation(playerName, locName)
+	deleteCount, err := deleteLocation(worldID, locName)
 
 	if err != nil {
 		handleError(w, playerName, err)
@@ -149,7 +152,7 @@ func handleDeleteLoc(w *wrapper.Wrapper, playerMsg string, playerName string) {
 		return
 	}
 
-	msg := fmt.Sprintf("Location successfully deleted")
+	msg := fmt.Sprintf("Location %s successfully deleted by %s", locName, playerName)
 
 	w.Say(msg)
 }
@@ -162,9 +165,9 @@ func handleStopGOTO(w *wrapper.Wrapper, playerName string) {
 	}
 }
 
-func handleGOTOLoc(w *wrapper.Wrapper, playerMsg string, playerName string) {
+func handleGOTOLoc(w *wrapper.Wrapper, worldID [16]byte, playerMsg string, playerName string) {
 	destName := getLocNameFromMsg(playerMsg, constants.StartDirectionToDest)
-	dest, err := getLocation(playerName, destName)
+	dest, err := getLocation(worldID, destName)
 
 	if err != nil {
 		handleError(w, playerName, err)
@@ -209,83 +212,4 @@ func handleGOTOLoc(w *wrapper.Wrapper, playerMsg string, playerName string) {
 			}
 		}
 	}(ctx, dest)
-}
-
-func handleError(w *wrapper.Wrapper, playerName string, err error) {
-	if err != nil {
-		log.Println(err)
-		w.Tell(playerName, err.Error())
-	}
-}
-
-func getLocNameFromMsg(msg string, eventmsg string) string {
-	locName := strings.TrimPrefix(msg, eventmsg)
-	log.Println(locName)
-	return strings.TrimSpace(locName)
-}
-
-func getDirectionToGo(playerRotationDeg []float64, playerPos []float64, destPos []float64) string {
-
-	playerX := playerPos[2]
-	playerY := playerPos[0]
-	destX := destPos[2]
-	destY := destPos[0]
-
-	deltaX := destX - playerX
-	deltaY := destY - playerY
-	thetaRad := math.Atan2(deltaY, deltaX)
-	deg := (thetaRad * (180 / math.Pi)) + 360
-	destDeg := math.Mod(deg, 360)
-
-	// log.Println(destDegFmt)
-
-	playerHorRotationDeg := playerRotationDeg[0]
-	playerFacingDeg := math.Abs(playerHorRotationDeg)
-
-	if playerHorRotationDeg > 0 {
-		playerFacingDeg = 360 - playerFacingDeg
-	}
-
-	// log.Println(playerHorRotationDeg)
-	// log.Println(playerFacingDeg)
-
-	xDiff := playerX - destX
-	yDiff := playerY - destY
-
-	if math.Abs(xDiff) < 30 && math.Abs(yDiff) < 10 {
-		return constants.Reached
-	}
-
-	degDifference := playerFacingDeg - destDeg
-	absDegDifference := math.Abs(degDifference)
-
-	if absDegDifference < 30 {
-		return constants.Forward
-	}
-
-	// if (absDegDifference < 180 && degDifference < 0) ||
-	// 	(absDegDifference > 180 && degDifference > 0) {
-	// 	return constants.Left
-	// }
-
-	// if (absDegDifference > 180 && degDifference < 0) ||
-	// 	(absDegDifference < 180 && degDifference > 0) {
-	// 	return constants.Right
-	// }
-
-	if absDegDifference < 180 {
-		if degDifference < 0 {
-			return constants.Left
-		}
-		return constants.Right
-	}
-
-	if absDegDifference > 180 {
-		if degDifference < 0 {
-			return constants.Right
-		}
-		return constants.Left
-	}
-
-	return constants.Back
 }

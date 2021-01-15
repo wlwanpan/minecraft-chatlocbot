@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 
 	cmds "github.com/Ana-Wan/minecraft-save-script/cmds"
@@ -16,15 +17,19 @@ func main() {
 
 	flag.Parse()
 
-	log.Print(*memPtr, *maxMemPtr, *pathToServerJarPtr)
+	log.Println(fmt.Sprintf("Loading file %s", *pathToServerJarPtr))
 
 	if err := godotenv.Load(); err != nil {
-		log.Print("No .env file found")
+		log.Print("No .env file found, server closing ...")
+		return
 	}
+
+	id := cmds.GetWorldID()
+	log.Println(fmt.Sprintf("World Id = %s", id))
 
 	wpr := cmds.RunServer(*memPtr, *maxMemPtr, *pathToServerJarPtr)
 
 	defer wpr.Stop()
 
-	cmds.HandleGameEvents(wpr)
+	cmds.HandleGameEvents(wpr, id)
 }

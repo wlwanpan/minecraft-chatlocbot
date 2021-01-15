@@ -2,7 +2,8 @@ package dbschemas
 
 // SavedLocation : saved location
 type SavedLocation struct {
-	PlayerName   string
+	WorldId      [16]byte
+	SavedBy      string
 	LocationName string
 	XPos         float64
 	YPos         float64
