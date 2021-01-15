@@ -14,4 +14,6 @@ const (
 	Back    string = "Back"
 	Right   string = "Right"
 	Left    string = "Left"
+
+	Reached string = "Destination reached"
 )

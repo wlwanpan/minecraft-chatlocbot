@@ -134,13 +134,6 @@ func handleGetLoc(w *wrapper.Wrapper, playerMsg string, playerName string) {
 	w.Say(msg)
 }
 
-func handleStopGOTO(w *wrapper.Wrapper, playerName string) {
-	if cancelCmd, hasCmd := runningPlayerCmds[playerName]; hasCmd {
-		cancelCmd()
-		w.Tell(playerName, "Stopped direction to destination")
-	}
-}
-
 func handleDeleteLoc(w *wrapper.Wrapper, playerMsg string, playerName string) {
 	locName := getLocNameFromMsg(playerMsg, constants.DeleteLocation)
 
@@ -159,6 +152,14 @@ func handleDeleteLoc(w *wrapper.Wrapper, playerMsg string, playerName string) {
 	msg := fmt.Sprintf("Location successfully deleted")
 
 	w.Say(msg)
+}
+
+func handleStopGOTO(w *wrapper.Wrapper, playerName string) {
+	if cancelCmd, hasCmd := runningPlayerCmds[playerName]; hasCmd {
+		cancelCmd()
+		delete(runningPlayerCmds, playerName)
+		w.Tell(playerName, "Stopped direction to destination")
+	}
 }
 
 func handleGOTOLoc(w *wrapper.Wrapper, playerMsg string, playerName string) {
@@ -190,14 +191,18 @@ func handleGOTOLoc(w *wrapper.Wrapper, playerMsg string, playerName string) {
 					return
 				}
 
-				//pos := out.Pos
-				playerDir := getHorPlayerDirection(out.Rotation[0])
-				//destPos := []float64{dest.XPos, dest.YPos, dest.ZPos}
-				//directionToGo := getDirectionToGo(playerDir, pos, destPos)
+				pos := out.Pos
+				// playerDir := getHorPlayerDirection(out.Rotation[0])
+				destPos := []float64{dest.XPos, dest.YPos, dest.ZPos}
+				directionToGo := getDirectionToGo(out.Rotation, pos, destPos)
 
-				w.Tell(playerName, playerDir)
-				//w.Tell(playerName, fmt.Sprintf("%v", directionToGo))
-				// w.Tell(playerName, fmt.Sprintf("%f %f %f", dest.XPos, dest.YPos, dest.ZPos))
+				if directionToGo == constants.Reached {
+					handleStopGOTO(w, playerName)
+					w.Tell(playerName, fmt.Sprintf(directionToGo))
+					return
+				}
+
+				w.Tell(playerName, directionToGo)
 
 			case <-ctx.Done():
 				return
@@ -219,90 +224,68 @@ func getLocNameFromMsg(msg string, eventmsg string) string {
 	return strings.TrimSpace(locName)
 }
 
-func getDirectionToGo(playerDir string, playerPos []float64, destPos []float64) string {
+func getDirectionToGo(playerRotationDeg []float64, playerPos []float64, destPos []float64) string {
 
-	direction := ""
+	playerX := playerPos[2]
+	playerY := playerPos[0]
+	destX := destPos[2]
+	destY := destPos[0]
 
-	if playerPos[2] < destPos[2] {
-		direction += constants.South
-	} else {
-		direction += constants.North
+	deltaX := destX - playerX
+	deltaY := destY - playerY
+	thetaRad := math.Atan2(deltaY, deltaX)
+	deg := (thetaRad * (180 / math.Pi)) + 360
+	destDeg := math.Mod(deg, 360)
+
+	// log.Println(destDegFmt)
+
+	playerHorRotationDeg := playerRotationDeg[0]
+	playerFacingDeg := math.Abs(playerHorRotationDeg)
+
+	if playerHorRotationDeg > 0 {
+		playerFacingDeg = 360 - playerFacingDeg
 	}
 
-	if playerPos[0] < destPos[0] {
-		direction += constants.East
-	} else {
-		direction += constants.West
+	// log.Println(playerHorRotationDeg)
+	// log.Println(playerFacingDeg)
+
+	xDiff := playerX - destX
+	yDiff := playerY - destY
+
+	if math.Abs(xDiff) < 30 && math.Abs(yDiff) < 10 {
+		return constants.Reached
 	}
 
-	// directionMsg := ""
+	degDifference := playerFacingDeg - destDeg
+	absDegDifference := math.Abs(degDifference)
 
-	// switch playerDir {
-	// case "North":
-	// case "South":
-	// case "East":
-	// case "West":
+	if absDegDifference < 30 {
+		return constants.Forward
+	}
+
+	// if (absDegDifference < 180 && degDifference < 0) ||
+	// 	(absDegDifference > 180 && degDifference > 0) {
+	// 	return constants.Left
 	// }
 
-	return direction
-}
+	// if (absDegDifference > 180 && degDifference < 0) ||
+	// 	(absDegDifference < 180 && degDifference > 0) {
+	// 	return constants.Right
+	// }
 
-func getHorPlayerDirection(horRotation float64) string {
-
-	isNegative := false
-	if horRotation < 0 {
-		isNegative = true
+	if absDegDifference < 180 {
+		if degDifference < 0 {
+			return constants.Left
+		}
+		return constants.Right
 	}
 
-	degree := math.Abs(horRotation)
-
-	switch {
-	// North West
-	case degree >= 120 && degree <= 150:
-		if isNegative {
-			return constants.NorthEast
+	if absDegDifference > 180 {
+		if degDifference < 0 {
+			return constants.Right
 		}
-		return constants.NorthWest
-
-	// North
-	case degree >= 150 && degree <= 210:
-		return constants.North
-
-	// North East
-	case degree >= 210 && degree <= 240:
-		if isNegative {
-			return constants.NorthWest
-		}
-		return constants.NorthEast
-	// East
-	case degree >= 420 && degree <= 270:
-		if isNegative {
-			return constants.West
-		}
-		return constants.East
-
-	// South East
-	case degree >= 300 && degree <= 330:
-		if isNegative {
-			return constants.SouthWest
-		}
-		return constants.SouthEast
-
-	// South West
-	case degree >= 60 && degree <= 30:
-		if isNegative {
-			return constants.SouthEast
-		}
-		return constants.SouthWest
-
-	// West
-	case degree >= 60 && degree <= 120:
-		if isNegative {
-			return constants.East
-		}
-		return constants.West
-
-	default:
-		return constants.South
+		return constants.Left
 	}
+
+	return constants.Back
 }
