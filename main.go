@@ -24,8 +24,8 @@ func main() {
 		return
 	}
 
-	id := cmds.GetWorldID()
-	log.Println(fmt.Sprintf("World Id = %s", id))
+	id, idStr := cmds.GetWorldID()
+	log.Println(fmt.Sprintf("World Id = %s", idStr))
 
 	wpr := cmds.RunServer(*memPtr, *maxMemPtr, *pathToServerJarPtr)
 

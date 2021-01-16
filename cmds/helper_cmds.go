@@ -14,7 +14,7 @@ import (
 )
 
 // GetWorldID returns the world id if worldid.txt file exists, else creates a new worldid.txt file with a new id
-func GetWorldID() [16]byte {
+func GetWorldID() ([16]byte, string) {
 
 	file, err := os.OpenFile("worldid.txt", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 
@@ -22,7 +22,7 @@ func GetWorldID() [16]byte {
 
 	if err != nil {
 		log.Print(err)
-		return uuid.Nil
+		return uuid.Nil, ""
 	}
 
 	idStr := ""
@@ -43,7 +43,7 @@ func GetWorldID() [16]byte {
 		}
 
 		file.Close()
-		return newID
+		return newID, idStr
 	}
 
 	id, err := uuid.Parse(idStr)
@@ -51,7 +51,7 @@ func GetWorldID() [16]byte {
 		log.Fatal(fmt.Sprintf("Could not retrieve world id, the worldid.txt file might have been previously modified\nError: %v", err))
 	}
 
-	return id
+	return id, idStr
 }
 
 func handleError(w *wrapper.Wrapper, playerName string, err error) {
