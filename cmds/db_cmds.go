@@ -35,7 +35,7 @@ func saveLocation(worldID [16]byte, playerName string, locName string, pos []flo
 	opts := options.FindOneAndUpdate()
 	opts.SetUpsert(true)
 	opts.SetReturnDocument(options.After)
-	res := collection.FindOneAndUpdate(ctx, bson.M{"worldid": playerName, "locationname": locName}, bson.M{"$set": loc}, opts)
+	res := collection.FindOneAndUpdate(ctx, bson.M{"worldid": playerName, "locationname": locName, "savedby": playerName}, bson.M{"$set": loc}, opts)
 	err := res.Err()
 
 	return loc, handleDBErrors(err)

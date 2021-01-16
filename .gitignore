@@ -22,5 +22,6 @@ logs
 world
 banned*
 *.json
+worldid.txt
 
 .env
