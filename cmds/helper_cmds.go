@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	constants "github.com/Ana-Wan/minecraft-catlocbot/constants"
+	constants "github.com/Ana-Wan/minecraft-chatlocbot/constants"
 	uuid "github.com/google/uuid"
 	wrapper "github.com/wlwanpan/minecraft-wrapper"
 )

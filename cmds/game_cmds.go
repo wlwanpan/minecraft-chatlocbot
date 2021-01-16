@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	constants "github.com/Ana-Wan/minecraft-catlocbot/constants"
-	dbschemas "github.com/Ana-Wan/minecraft-catlocbot/db_schemas"
+	constants "github.com/Ana-Wan/minecraft-chatlocbot/constants"
+	dbschemas "github.com/Ana-Wan/minecraft-chatlocbot/db_schemas"
 
 	wrapper "github.com/wlwanpan/minecraft-wrapper"
 	"github.com/wlwanpan/minecraft-wrapper/events"

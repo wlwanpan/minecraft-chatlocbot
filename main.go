@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	cmds "github.com/Ana-Wan/minecraft-catlocbot/cmds"
+	cmds "github.com/Ana-Wan/minecraft-chatlocbot/cmds"
 	"github.com/joho/godotenv"
 )
 
