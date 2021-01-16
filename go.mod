@@ -6,6 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.36.28 // indirect
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/google/uuid v1.1.5
+	github.com/gotk3/gotk3 v0.5.2 // indirect
 	github.com/joho/godotenv v1.3.0
 	github.com/klauspost/compress v1.11.7 // indirect
 	github.com/looplab/fsm v0.2.0 // indirect

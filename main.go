@@ -6,6 +6,7 @@ import (
 	"log"
 
 	cmds "github.com/Ana-Wan/minecraft-chatlocbot/cmds"
+	"github.com/gotk3/gotk3/gtk"
 	"github.com/joho/godotenv"
 )
 
@@ -27,9 +28,23 @@ func main() {
 	id := cmds.GetWorldID()
 	log.Println(fmt.Sprintf("World Id = %s", id))
 
-	wpr := cmds.RunServer(*memPtr, *maxMemPtr, *pathToServerJarPtr)
+	// testing gui
 
-	defer wpr.Stop()
+	gtk.Init(nil)
+	win, err := gtk.WindowNew(gtk.WINDOW_TOPLEVEL)
+	if err != nil {
+		log.Fatal("Unable to create window:", err)
+	}
+	win.SetTitle("Simple Example")
+	win.Connect("destroy", func() {
+		gtk.MainQuit()
+	})
 
-	cmds.HandleGameEvents(wpr, id)
+	//
+
+	//wpr := cmds.RunServer(*memPtr, *maxMemPtr, *pathToServerJarPtr)
+
+	//defer wpr.Stop()
+
+	//cmds.HandleGameEvents(wpr, id)
 }
