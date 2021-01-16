@@ -80,17 +80,12 @@ func getDirectionToGo(playerRotationDeg []float64, playerPos []float64, destPos 
 	deg := (thetaRad * (180 / math.Pi)) + 360
 	destDeg := math.Mod(deg, 360)
 
-	// log.Println(destDegFmt)
-
 	playerHorRotationDeg := playerRotationDeg[0]
 	playerFacingDeg := math.Abs(playerHorRotationDeg)
 
 	if playerHorRotationDeg > 0 {
 		playerFacingDeg = 360 - playerFacingDeg
 	}
-
-	// log.Println(playerHorRotationDeg)
-	// log.Println(playerFacingDeg)
 
 	xDiff := playerX - destX
 	yDiff := playerY - destY
@@ -106,28 +101,14 @@ func getDirectionToGo(playerRotationDeg []float64, playerPos []float64, destPos 
 		return constants.Forward
 	}
 
-	// if (absDegDifference < 180 && degDifference < 0) ||
-	// 	(absDegDifference > 180 && degDifference > 0) {
-	// 	return constants.Left
-	// }
-
-	// if (absDegDifference > 180 && degDifference < 0) ||
-	// 	(absDegDifference < 180 && degDifference > 0) {
-	// 	return constants.Right
-	// }
-
-	if absDegDifference < 180 {
-		if degDifference < 0 {
-			return constants.Left
-		}
-		return constants.Right
+	if (absDegDifference < 180 && degDifference < 0) ||
+		(absDegDifference > 180 && degDifference > 0) {
+		return constants.Left
 	}
 
-	if absDegDifference > 180 {
-		if degDifference < 0 {
-			return constants.Right
-		}
-		return constants.Left
+	if (absDegDifference > 180 && degDifference < 0) ||
+		(absDegDifference < 180 && degDifference > 0) {
+		return constants.Right
 	}
 
 	return constants.Back

@@ -77,6 +77,18 @@ func deleteLocation(worldID [16]byte, locName string) (int64, error) {
 	return deleteCount, handleDBErrors(err)
 }
 
+func deleteAllLocations(worldID [16]byte) (int64, error) {
+
+	collection := getSavedLocationsDatabaseCollection()
+	ctx := context.TODO()
+
+	res, err := collection.DeleteMany(ctx, bson.M{"worldid": worldID})
+
+	deleteCount := res.DeletedCount
+
+	return deleteCount, handleDBErrors(err)
+}
+
 // DB Helpers
 func getSavedLocationsDatabaseCollection() *mongo.Collection {
 	dbClient := getDbClient()
@@ -110,6 +122,8 @@ func handleDBErrors(err error) error {
 		switch err {
 		case mongo.ErrNoDocuments:
 			return errors.New("Location does not exist")
+		case mongo.ErrClientDisconnected:
+			return errors.New("Error when connecting to database, please restart server")
 		default:
 			return err
 		}

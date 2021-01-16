@@ -60,23 +60,33 @@ func handlePlayerSay(w *wrapper.Wrapper, gameEvent events.GameEvent, worldID [16
 	playerMsg := gameEvent.Data["player_message"]
 
 	switch {
+	// Player save loc
 	case strings.Contains(playerMsg, constants.SaveLocation):
 		handleSaveLocation(w, worldID, playerMsg, playerName)
 
+	// Player get all locs
 	case strings.Contains(playerMsg, constants.GetAllLocations):
 		handleGetAllLoc(w, worldID, playerName)
 
+	// Player get specific loc
 	case strings.Contains(playerMsg, constants.GetLocation):
 		handleGetLoc(w, worldID, playerMsg, playerName)
 
+	// Player start direction to dest
 	case strings.Contains(playerMsg, constants.StartDirectionToDest):
 		handleGOTOLoc(w, worldID, playerMsg, playerName)
 
+	// Player stops direction to dest
 	case strings.Contains(playerMsg, constants.StopDirectionToDest):
 		handleStopGOTO(w, playerName)
 
+	// Player delete specific location
 	case strings.Contains(playerMsg, constants.DeleteLocation):
 		handleDeleteLoc(w, worldID, playerMsg, playerName)
+
+	// Player deletes all location in current world
+	case strings.Contains(playerMsg, constants.DeleteAllLocations):
+		handleDeleteAllLocs(w, worldID, playerName)
 	}
 
 	return
@@ -157,6 +167,25 @@ func handleDeleteLoc(w *wrapper.Wrapper, worldID [16]byte, playerMsg string, pla
 	w.Say(msg)
 }
 
+func handleDeleteAllLocs(w *wrapper.Wrapper, worldID [16]byte, playerName string) {
+
+	deleteCount, err := deleteAllLocations(worldID)
+
+	if err != nil {
+		handleError(w, playerName, err)
+		return
+	}
+
+	if deleteCount == 0 {
+		w.Tell(playerName, "No location deleted")
+		return
+	}
+
+	msg := fmt.Sprintf("%d locations deleted by %s", deleteCount, playerName)
+
+	w.Say(msg)
+}
+
 func handleStopGOTO(w *wrapper.Wrapper, playerName string) {
 	if cancelCmd, hasCmd := runningPlayerCmds[playerName]; hasCmd {
 		cancelCmd()
@@ -195,7 +224,6 @@ func handleGOTOLoc(w *wrapper.Wrapper, worldID [16]byte, playerMsg string, playe
 				}
 
 				pos := out.Pos
-				// playerDir := getHorPlayerDirection(out.Rotation[0])
 				destPos := []float64{dest.XPos, dest.YPos, dest.ZPos}
 				directionToGo := getDirectionToGo(out.Rotation, pos, destPos)
 
