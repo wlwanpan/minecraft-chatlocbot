@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	dbschemas "github.com/Ana-Wan/minecraft-save-script/db_schemas"
+	dbschemas "github.com/Ana-Wan/minecraft-catlocbot/db_schemas"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
