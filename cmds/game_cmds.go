@@ -260,11 +260,17 @@ func handleGOTOLoc(w *wrapper.Wrapper, worldID [16]byte, playerMsg string, playe
 	go func(ctx context.Context, dest dbschemas.SavedLocation) {
 		for {
 			select {
-			case <-time.Tick(time.Second * 2):
+			case <-time.Tick(time.Second * 5):
 				out, err := w.DataGet("entity", playerName)
 				if err != nil {
 					handleError(w, playerName, err)
 					cancel()
+					return
+				}
+
+				if out.Pos == nil || len(out.Pos) == 0 {
+					handleStopGOTO(w, playerName)
+					w.Tell(playerName, "Couldn't get position")
 					return
 				}
 
