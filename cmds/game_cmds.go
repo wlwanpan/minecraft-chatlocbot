@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -64,6 +65,10 @@ func handlePlayerSay(w *wrapper.Wrapper, gameEvent events.GameEvent, worldID [16
 	case strings.Contains(playerMsg, constants.SaveLocation):
 		handleSaveLocation(w, worldID, playerMsg, playerName)
 
+	// Player save coords
+	case strings.Contains(playerMsg, constants.SaveCoords):
+		handleSaveCoords(w, worldID, playerMsg, playerName)
+
 	// Player get all locs
 	case strings.Contains(playerMsg, constants.GetAllLocations):
 		handleGetAllLoc(w, worldID, playerName)
@@ -103,6 +108,46 @@ func handleSaveLocation(w *wrapper.Wrapper, worldID [16]byte, playerMsg string, 
 
 	pos := out.Pos
 	loc, err := saveLocation(worldID, playerName, locName, pos)
+
+	if err != nil {
+		handleError(w, playerName, err)
+		return
+	}
+
+	msg := fmt.Sprintf("%s saved location %s with position X %0.1f Y %0.1f Z %0.1f",
+		playerName, loc.LocationName, loc.XPos, loc.YPos, loc.ZPos)
+
+	w.Say(msg)
+}
+
+func handleSaveCoords(w *wrapper.Wrapper, worldID [16]byte, playerMsg string, playerName string) {
+	coordsInfo := getCoordsInfoFromMsg(playerMsg, constants.SaveLocation)
+
+	if len(coordsInfo) != 4 {
+		w.Say(fmt.Sprintf("command should have the format: %s <location_name> <x_position> <y_position> <z_position>", constants.SaveCoords))
+		return
+	}
+
+	xPos, errX := strconv.ParseFloat(coordsInfo[1], 64)
+	if errX != nil {
+		w.Say("X position should be a valid number")
+		return
+	}
+
+	yPos, errY := strconv.ParseFloat(coordsInfo[2], 64)
+	if errY != nil {
+		w.Say("Y position should be a valid number")
+		return
+	}
+
+	zPos, errY := strconv.ParseFloat(coordsInfo[3], 64)
+	if errX != nil {
+		w.Say("Z position should be a valid number")
+		return
+	}
+
+	pos := []float64{xPos, yPos, zPos}
+	loc, err := saveLocation(worldID, playerName, coordsInfo[0], pos)
 
 	if err != nil {
 		handleError(w, playerName, err)

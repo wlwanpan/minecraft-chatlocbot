@@ -2,6 +2,7 @@ package constants
 
 const (
 	SaveLocation       string = "loc save"
+	SaveCoords      string = "loc coords save"
 	GetAllLocations    string = "loc list"
 	GetLocation        string = "loc get"
 	DeleteLocation     string = "loc delete"

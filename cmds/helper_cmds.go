@@ -63,8 +63,17 @@ func handleError(w *wrapper.Wrapper, playerName string, err error) {
 
 func getLocNameFromMsg(msg string, eventmsg string) string {
 	locName := strings.TrimPrefix(msg, eventmsg)
-	log.Println(locName)
+
 	return strings.TrimSpace(locName)
+}
+
+func getCoordsInfoFromMsg(msg string, eventmsg string) []string {
+	msgSuffix := strings.TrimPrefix(msg, eventmsg)
+	msgNoWhiteSpace := strings.TrimSpace(msgSuffix)
+
+	coordsInfo := strings.Split(msgNoWhiteSpace, " ")
+
+	return coordsInfo
 }
 
 func getDirectionToGo(playerRotationDeg []float64, playerPos []float64, destPos []float64) string {
