@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"log"
@@ -25,7 +26,7 @@ func main() {
 	}
 
 	id := cmds.GetWorldID()
-	log.Println(fmt.Sprintf("World Id = %s", id))
+	log.Println(fmt.Sprintf("World Id = %v", hex.EncodeToString(id[:])))
 
 	wpr := cmds.RunServer(*memPtr, *maxMemPtr, *pathToServerJarPtr)
 

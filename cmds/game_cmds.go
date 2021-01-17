@@ -121,7 +121,7 @@ func handleSaveLocation(w *wrapper.Wrapper, worldID [16]byte, playerMsg string, 
 }
 
 func handleSaveCoords(w *wrapper.Wrapper, worldID [16]byte, playerMsg string, playerName string) {
-	coordsInfo := getCoordsInfoFromMsg(playerMsg, constants.SaveLocation)
+	coordsInfo := getCoordsInfoFromMsg(playerMsg, constants.SaveCoords)
 
 	if len(coordsInfo) != 4 {
 		w.Say(fmt.Sprintf("command should have the format: %s <location_name> <x_position> <y_position> <z_position>", constants.SaveCoords))

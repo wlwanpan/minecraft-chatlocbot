@@ -92,7 +92,7 @@ func deleteAllLocations(worldID [16]byte) (int64, error) {
 // DB Helpers
 func getSavedLocationsDatabaseCollection() *mongo.Collection {
 	dbClient := getDbClient()
-	return dbClient.Database("catlocs").Collection("saved-locations")
+	return dbClient.Database("chatlocs").Collection("saved-locations")
 }
 
 func getDbClient() *mongo.Client {
