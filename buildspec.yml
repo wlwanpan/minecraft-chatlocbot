@@ -16,4 +16,4 @@ phases:
 artifacts:
   files:
     - 'bin/chatlocbot'
-  base-directory: ''
+    - 'Procfile'
