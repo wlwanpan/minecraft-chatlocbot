@@ -30,3 +30,4 @@ When you want to get the coordinates of that location, you can type in `loc get 
 If you want directions to a location, type in `loc goto <the_location_name>` and it will print the direction you need to face every two seconds in the chat.
 
 You can stop the directions by typing in `loc stop`
+
