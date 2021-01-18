@@ -1,0 +1,19 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      golang: 1.13
+  build:
+    commands:
+      - echo Fetching go dependencies
+      - go get ./...
+      - go test ./... -race
+      - GOOS=linux GOARCH=amd64 go build -o bin/chatlocbot -ldflags="-s -w"
+    post_build:
+      commands:
+        - echo Build completed on `date`
+artifacts:
+  files:
+    - 'bin/chatlocbot'
+  base-directory: ''

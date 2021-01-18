@@ -1,0 +1,1 @@
+web: bin/chatlocbot -mem=3064 -maxmem=3064
